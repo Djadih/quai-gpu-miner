@@ -24,6 +24,7 @@ run_miner() {
     
     # Create a new window and run the command
     tmux new-window -t $SESSION -n "$window_name" "$cmd"
+    sleep 5
 }
 
 if [[ "$miner_num" -eq 00 ]]; then
