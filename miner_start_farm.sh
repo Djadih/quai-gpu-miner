@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check if the miner_num environment variable is set
-if [[ -z "$2" ]]; then
+if [[ -z "$1" ]]; then
     echo "Please set the miner_num environment variable."
     exit 1
 fi
