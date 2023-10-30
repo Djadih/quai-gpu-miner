@@ -142,6 +142,7 @@ void PoolManager::setClientHandlers()
             // Suspend mining and submit new connection request
             cnote << "No connection. Suspend mining ...";
             Farm::f().pause();
+            __libcpp_thread_sleep_for(10000)
             g_io_service.post(m_io_strand.wrap(boost::bind(&PoolManager::rotateConnect, this)));
         }
     });
