@@ -24,7 +24,7 @@ struct PoolSettings
     std::vector<std::shared_ptr<URI>> connections;  // List of connection definitions
     unsigned getWorkPollInterval = 500;             // Interval (ms) between getwork requests
     unsigned noWorkTimeout = 100000;       // If no new jobs in this number of seconds drop connection
-    unsigned noResponseTimeout = 10;     // If no response in this number of seconds drop connection
+    unsigned noResponseTimeout = 30;     // If no response in this number of seconds drop connection
     unsigned poolFailoverTimeout = 0;   // Return to primary pool after this number of minutes
     bool reportHashrate = false;        // Whether or not to report hashrate to pool
     unsigned hashRateInterval = 60;     // Interval in seconds among hashrate submissions
