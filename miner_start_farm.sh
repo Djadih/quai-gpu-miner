@@ -52,7 +52,7 @@ elif [[ "$1" == "21" ]]; then
     run_miner 2 1 35.202.3.128 30007
 
 elif [[ "$1" == "22" ]]; then
-    run_miner 1 2 35.202.3.128 30008
+    run_miner 2 2 35.202.3.128 30008
 
 else
     echo "Invalid miner_num value"
