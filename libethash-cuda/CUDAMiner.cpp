@@ -208,10 +208,13 @@ void CUDAMiner::workLoop()
                 continue;
             }
 
+            cudalog << "New work received for epoch " << w.epoch << " block " << w.block;
+
             if (old_epoch != w.epoch)
             {
                 if (!initEpoch())
                     break;  // This will simply exit the thread
+                cudalog << "Epoch " << w.epoch << " initialized";
                 old_epoch = w.epoch;
                 continue;
             }
@@ -223,6 +226,7 @@ void CUDAMiner::workLoop()
             }
             if (old_period_seed != period_seed)
             {
+                cudalog << "Launching period " << period_seed << " ProgPow kernel";
                 m_compileThread->join();
                 // sanity check the next kernel
                 if (period_seed != m_nextProgpowPeriod)
@@ -231,6 +235,7 @@ void CUDAMiner::workLoop()
                     m_nextProgpowPeriod = period_seed;
                     m_compileThread =
                         new boost::thread(boost::bind(&CUDAMiner::asyncCompile, this));
+                cudalog << "Period " << period_seed << " ProgPow kernel launched";
                     m_compileThread->join();
                 }
                 old_period_seed = period_seed;
