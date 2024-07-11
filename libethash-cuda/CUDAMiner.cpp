@@ -538,6 +538,12 @@ void CUDAMiner::search(
                   << ", Buffer=" << Buffer
                   << ", hack_false=" << hack_false << std::endl;
 
+        // Debug: Print the address of the kernel function
+        std::cout << "Kernel function address: " << reinterpret_cast<void*>(m_kernel[m_kernelExecIx]) << std::endl;
+
+        // Debug: Print the stream handle
+        std::cout << "Stream handle: " << stream << std::endl;
+
         CUresult launchResult = cuLaunchKernel(m_kernel[m_kernelExecIx],  //
             m_settings.gridSize, 1, 1,                                   // grid dim
             m_settings.blockSize, 1, 1,                                  // block dim
@@ -550,6 +556,7 @@ void CUDAMiner::search(
             const char* errStr;
             cuGetErrorString(launchResult, &errStr);
             std::cerr << "Error launching kernel: " << errStr << std::endl;
+            std::cout << "Exiting";
             exit(1);
         }
     }
