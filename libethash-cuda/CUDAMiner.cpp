@@ -521,12 +521,27 @@ void CUDAMiner::search(
             continue;
         }
 
-        CU_SAFE_CALL(cuLaunchKernel(m_kernel[m_kernelExecIx],  //
-            m_settings.gridSize, 1, 1,                         // grid dim
-            m_settings.blockSize, 1, 1,                        // block dim
-            0,                                                 // shared mem
-            stream,                                            // stream
-            args, 0));                                         // arguments
+        std::cout << "Launching kernel with args: "
+                  << "start_nonce=" << start_nonce
+                  << ", current_header=" << current_header
+                  << ", m_current_target=" << m_current_target
+                  << ", dag=" << dag
+                  << ", Buffer=" << Buffer
+                  << ", hack_false=" << hack_false << std::endl;
+
+        CUresult launchResult = cuLaunchKernel(m_kernel[m_kernelExecIx],  //
+            m_settings.gridSize, 1, 1,                                   // grid dim
+            m_settings.blockSize, 1, 1,                                  // block dim
+            0,                                                           // shared mem
+            stream,                                                      // stream
+            args, 0);                                                    // arguments
+
+        if (launchResult != CUDA_SUCCESS)
+        {
+            const char* errStr;
+            cuGetErrorString(launchResult, &errStr);
+            std::cerr << "Error launching kernel: " << errStr << std::endl;
+        }
     }
 
     // Process stream batches until we get new work
@@ -596,12 +611,19 @@ void CUDAMiner::search(
                     continue;
                 }
 
-                CU_SAFE_CALL(cuLaunchKernel(m_kernel[m_kernelExecIx],  //
-                    m_settings.gridSize, 1, 1,                         // grid dim
-                    m_settings.blockSize, 1, 1,                        // block dim
-                    0,                                                 // shared mem
-                    stream,                                            // stream
-                    args, 0));                                         // arguments
+                CUresult launchResult = cuLaunchKernel(m_kernel[m_kernelExecIx],  //
+                    m_settings.gridSize, 1, 1,                                   // grid dim
+                    m_settings.blockSize, 1, 1,                                  // block dim
+                    0,                                                           // shared mem
+                    stream,                                                      // stream
+                    args, 0);                                                    // arguments
+
+                if (launchResult != CUDA_SUCCESS)
+                {
+                    const char* errStr;
+                    cuGetErrorString(launchResult, &errStr);
+                    std::cerr << "Error launching kernel: " << errStr << std::endl;
+                }
             }
             if (found_count)
             {
