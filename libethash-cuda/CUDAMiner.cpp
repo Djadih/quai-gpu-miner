@@ -481,23 +481,46 @@ void CUDAMiner::search(
         set_target(target);
         m_current_target = target;
     }
-    hash32_t current_header = *reinterpret_cast<hash32_t const *>(header);
+    hash32_t current_header = *reinterpret_cast<hash32_t const*>(header);
     hash64_t* dag;
     get_constants(&dag, NULL, NULL, NULL);
 
-    // prime each stream, clear search result buffers and start the search
+    // Check if dag is properly initialized
+    if (!dag)
+    {
+        std::cerr << "Error: dag is not initialized properly." << std::endl;
+        return;
+    }
+
+    // Prime each stream, clear search result buffers and start the search
     uint32_t current_index;
     for (current_index = 0; current_index < m_settings.streams;
          current_index++, start_nonce += m_batch_size)
     {
         cudaStream_t stream = m_streams[current_index];
+
+        // Check if stream is properly initialized
+        if (!stream)
+        {
+            std::cerr << "Error: stream " << current_index << " is not initialized properly." << std::endl;
+            continue;
+        }
+
         volatile Search_results& buffer(*m_search_buf[current_index]);
         buffer.count = 0;
 
         // Run the batch for this stream
-        volatile Search_results *Buffer = &buffer;
+        volatile Search_results* Buffer = &buffer;
         bool hack_false = false;
-        void *args[] = {&start_nonce, &current_header, &m_current_target, &dag, &Buffer, &hack_false};
+        void* args[] = { &start_nonce, &current_header, &m_current_target, &dag, &Buffer, &hack_false };
+
+        // Check if kernel is properly initialized
+        if (!m_kernel[m_kernelExecIx])
+        {
+            std::cerr << "Error: kernel " << m_kernelExecIx << " is not initialized properly." << std::endl;
+            continue;
+        }
+
         CU_SAFE_CALL(cuLaunchKernel(m_kernel[m_kernelExecIx],  //
             m_settings.gridSize, 1, 1,                         // grid dim
             m_settings.blockSize, 1, 1,                        // block dim
@@ -506,12 +529,11 @@ void CUDAMiner::search(
             args, 0));                                         // arguments
     }
 
-    // process stream batches until we get new work.
+    // Process stream batches until we get new work
     bool done = false;
 
     uint32_t gids[MAX_SEARCH_RESULTS];
     h256 mixHashes[MAX_SEARCH_RESULTS];
-
 
     while (!done)
     {
@@ -529,10 +551,10 @@ void CUDAMiner::search(
         {
             // Each pass of this loop will wait for a stream to exit,
             // save any found solutions, then restart the stream
-            // on the next group of nonces.
+            // on the next group of nonces
             cudaStream_t stream = m_streams[current_index];
 
-            // Wait for the stream complete
+            // Wait for the stream to complete
             CUDA_SAFE_CALL(cudaStreamSynchronize(stream));
 
             if (shouldStop())
@@ -541,7 +563,7 @@ void CUDAMiner::search(
                 done = true;
             }
 
-            // Detect solutions in current stream's solution buffer
+            // Detect solutions in the current stream's solution buffer
             volatile Search_results& buffer(*m_search_buf[current_index]);
             uint32_t found_count = std::min((unsigned)buffer.count, MAX_SEARCH_RESULTS);
 
@@ -549,9 +571,8 @@ void CUDAMiner::search(
             {
                 buffer.count = 0;
 
-                // Extract solution and pass to higer level
+                // Extract solution and pass to higher level
                 // using io_service as dispatcher
-
                 for (uint32_t i = 0; i < found_count; i++)
                 {
                     gids[i] = buffer.result[i].gid;
@@ -560,13 +581,21 @@ void CUDAMiner::search(
                 }
             }
 
-            // restart the stream on the next batch of nonces
-            // unless we are done for this round.
+            // Restart the stream on the next batch of nonces
+            // unless we are done for this round
             if (!done)
             {
-                volatile Search_results *Buffer = &buffer;
+                volatile Search_results* Buffer = &buffer;
                 bool hack_false = false;
-                void *args[] = {&start_nonce, &current_header, &m_current_target, &dag, &Buffer, &hack_false};
+                void* args[] = { &start_nonce, &current_header, &m_current_target, &dag, &Buffer, &hack_false };
+
+                // Check if kernel is properly initialized
+                if (!m_kernel[m_kernelExecIx])
+                {
+                    std::cerr << "Error: kernel " << m_kernelExecIx << " is not initialized properly." << std::endl;
+                    continue;
+                }
+
                 CU_SAFE_CALL(cuLaunchKernel(m_kernel[m_kernelExecIx],  //
                     m_settings.gridSize, 1, 1,                         // grid dim
                     m_settings.blockSize, 1, 1,                        // block dim
@@ -581,7 +610,7 @@ void CUDAMiner::search(
                 {
                     uint64_t nonce = nonce_base + gids[i];
                     Farm::f().submitProof(Solution{
-                        nonce, mixHashes[i], w, std::chrono::steady_clock::now(), m_index});
+                        nonce, mixHashes[i], w, std::chrono::steady_clock::now(), m_index });
 
                     cudalog << EthWhite << "Job: " << w.header.abridged() << " Sol: 0x"
                             << toHex(nonce) << EthReset;
