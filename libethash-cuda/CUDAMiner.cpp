@@ -521,9 +521,18 @@ void CUDAMiner::search(
             continue;
         }
 
+        // Convert current_header and other hash types to hex string for printing
+        std::stringstream ss;
+        ss << std::hex << std::setfill('0');
+        for (int i = 0; i < sizeof(hash32_t); ++i)
+        {
+            ss << std::setw(2) << static_cast<unsigned>(reinterpret_cast<uint8_t*>(&current_header)[i]);
+        }
+        std::string current_header_str = ss.str();
+
         std::cout << "Launching kernel with args: "
                   << "start_nonce=" << start_nonce
-                  << ", current_header=" << current_header
+                  << ", current_header=" << current_header_str
                   << ", m_current_target=" << m_current_target
                   << ", dag=" << dag
                   << ", Buffer=" << Buffer
@@ -541,6 +550,7 @@ void CUDAMiner::search(
             const char* errStr;
             cuGetErrorString(launchResult, &errStr);
             std::cerr << "Error launching kernel: " << errStr << std::endl;
+            exit(1);
         }
     }
 
