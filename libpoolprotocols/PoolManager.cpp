@@ -175,7 +175,7 @@ void PoolManager::setClientHandlers()
             // If epoch is valued in workpackage take it
             if (wp.epoch == -1)
             {
-                if (m_currentWp.block > 0)
+                if (m_currentWp.block >= 0)
                     m_currentWp.epoch = m_currentWp.block / ETHASH_EPOCH_LENGTH;
                 else
                     m_currentWp.epoch = ethash::find_epoch_number(
