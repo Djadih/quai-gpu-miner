@@ -492,7 +492,7 @@ void Farm::submitProofAsync(Solution const& _s)
 #else
     const bool dbuild = false;
 #endif
-    if (!m_Settings.noEval || dbuild)
+    if (!m_Settings.noEval && dbuild)
     {
         Result r = EthashAux::eval(_s.work.epoch, _s.work.block, _s.work.header, _s.nonce);
         if (r.value > _s.work.boundary)
