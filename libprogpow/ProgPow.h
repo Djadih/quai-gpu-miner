@@ -4,7 +4,7 @@
 #include <string>
 
 // blocks before changing the random program
-#define PROGPOW_PERIOD          5
+#define PROGPOW_PERIOD          100
 // lanes that work together calculating a hash
 #define PROGPOW_LANES           16
 // uint32 registers per lane
