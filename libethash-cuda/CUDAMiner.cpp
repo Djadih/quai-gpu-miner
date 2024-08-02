@@ -136,12 +136,6 @@ bool CUDAMiner::initEpoch_internal()
                 CUDA_SAFE_CALL(cudaStreamCreateWithFlags(&m_streams[i], cudaStreamNonBlocking));
             }
         }
-        else
-        {
-            cudalog << "Generating DAG + Light (reusing buffers): "
-                    << dev::getFormattedMemory((double)RequiredMemory);
-            get_constants(&dag, NULL, &light, NULL);
-        }
 
         CUDA_SAFE_CALL(cudaMemcpy(reinterpret_cast<void*>(light), m_epochContext.lightCache,
             m_epochContext.lightSize, cudaMemcpyHostToDevice));
@@ -151,6 +145,24 @@ bool CUDAMiner::initEpoch_internal()
 
         ethash_generate_dag(
             dag, m_epochContext.dagSize, light, m_epochContext.lightNumItems, m_settings.gridSize, m_settings.blockSize, m_streams[0], m_deviceDescriptor.cuDeviceIndex);
+
+       cudalog << "ethash_generate_dag called with parameters:\n"
+        << "  dag: " << dag << "\n"
+        << "  DAG Size: " << m_epochContext.dagSize << "\n"
+        << "  light: " << light << "\n"
+        << "  Light Num Items: " << m_epochContext.lightNumItems << "\n"
+        << "  Grid Size: " << m_settings.gridSize << "\n"
+        << "  Block Size: " << m_settings.blockSize << "\n"
+        << "  Stream: " << m_streams[0] << "\n"
+        << "  Device Index: " << m_deviceDescriptor.cuDeviceIndex << "\n"
+        << "Generated DAG + Light in "
+        << std::chrono::duration_cast<std::chrono::milliseconds>(
+               std::chrono::steady_clock::now() - startInit)
+               .count()
+        << " ms. "
+        << dev::getFormattedMemory((double)(m_deviceDescriptor.totalMemory - RequiredMemory))
+        << " left.";
+
 
         cudalog << "Generated DAG + Light in "
                 << std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -487,7 +499,6 @@ void CUDAMiner::search(
     for (current_index = 0; current_index < m_settings.streams;
          current_index++, start_nonce += m_batch_size)
     {
-        cudalog << "Stream index: " << current_index;
         cudaStream_t stream = m_streams[current_index];
         volatile Search_results& buffer(*m_search_buf[current_index]);
         buffer.count = 0;
@@ -564,6 +575,10 @@ void CUDAMiner::search(
             {
                 volatile Search_results *Buffer = &buffer;
                 bool hack_false = false;
+                // std::cout << "Launching kernel with args: "
+                //   << ", dag=" << &dag << std::endl;
+                //   << ", Buffer=" << &Buffer
+                //   << ", hack_false=" << hack_false << std::endl;
                 void *args[] = {&start_nonce, &current_header, &m_current_target, &dag, &Buffer, &hack_false};
                 CU_SAFE_CALL(cuLaunchKernel(m_kernel[m_kernelExecIx],  //
                     m_settings.gridSize, 1, 1,                         // grid dim
