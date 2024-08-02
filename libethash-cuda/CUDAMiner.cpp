@@ -210,6 +210,8 @@ void CUDAMiner::workLoop()
 
             if (old_epoch != w.epoch)
             {
+                cudalog << "old epoch: " << old_epoch;
+                cudalog << "w.epoch: " << w.epoch;
                 if (!initEpoch())
                     break;  // This will simply exit the thread
                 old_epoch = w.epoch;
@@ -485,6 +487,7 @@ void CUDAMiner::search(
     for (current_index = 0; current_index < m_settings.streams;
          current_index++, start_nonce += m_batch_size)
     {
+        cudalog << "Stream index: " << current_index;
         cudaStream_t stream = m_streams[current_index];
         volatile Search_results& buffer(*m_search_buf[current_index]);
         buffer.count = 0;
