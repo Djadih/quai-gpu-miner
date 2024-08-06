@@ -65,8 +65,11 @@ bool CUDAMiner::initDevice()
 
     try
     {
-        CUDA_SAFE_CALL(cudaSetDevice(m_deviceDescriptor.cuDeviceIndex));
-        CUDA_SAFE_CALL(cudaDeviceReset());
+        CU_SAFE_CALL(cuDeviceGet(&m_device, m_deviceDescriptor.cuDeviceIndex));
+        CU_SAFE_CALL(cuDevicePrimaryCtxRelease(m_device));
+        CU_SAFE_CALL(cuDevicePrimaryCtxSetFlags(m_device, m_settings.schedule));
+        CU_SAFE_CALL(cuDevicePrimaryCtxRetain(&m_context, m_device));
+        CU_SAFE_CALL(cuCtxSetCurrent(m_context));
     }
     catch (const cuda_runtime_error& ec)
     {
@@ -93,21 +96,15 @@ bool CUDAMiner::initEpoch_internal()
 
     try
     {
-        hash64_t* dag;
-        hash64_t* light;
 
-        // If we have already enough memory allocated, we just have to
-        // copy light_cache and regenerate the DAG
+        // If we dont' have enough memory allocated, we have to allocate more memory
+        // before generating the dag
         if (m_allocated_memory_dag < m_epochContext.dagSize ||
             m_allocated_memory_light_cache < m_epochContext.lightSize)
         {
-            // We need to reset the device and (re)create the dag
-            // cudaDeviceReset() frees all previous allocated memory
-            CUDA_SAFE_CALL(cudaDeviceReset());
-
-            CUdevice device;
-            cuDeviceGet(&device, m_deviceDescriptor.cuDeviceIndex);
-            cuCtxCreate(&m_context, m_settings.schedule, device);
+            // Release previously allocated memory for dag and light
+            if (m_device_light) CUDA_SAFE_CALL(cudaFree(reinterpret_cast<void*>(m_device_light)));
+            if (m_device_dag) CUDA_SAFE_CALL(cudaFree(reinterpret_cast<void*>(m_device_dag)));
 
             // Check whether the current device has sufficient memory every time we recreate the dag
             if (m_deviceDescriptor.totalMemory < RequiredMemory)
@@ -120,13 +117,13 @@ bool CUDAMiner::initEpoch_internal()
                               // Eventually resume mining when changing coin or epoch (NiceHash)
             }
 
-            cudalog << "Generating DAG + Light : "
+            cudalog << "Allocating memory for DAG + Light : "
                     << dev::getFormattedMemory((double)RequiredMemory);
 
             // create buffer for cache
-            CUDA_SAFE_CALL(cudaMalloc(reinterpret_cast<void**>(&light), m_epochContext.lightSize));
+            CUDA_SAFE_CALL(cudaMalloc(reinterpret_cast<void**>(&m_device_light), m_epochContext.lightSize));
             m_allocated_memory_light_cache = m_epochContext.lightSize;
-            CUDA_SAFE_CALL(cudaMalloc(reinterpret_cast<void**>(&dag), m_epochContext.dagSize));
+            CUDA_SAFE_CALL(cudaMalloc(reinterpret_cast<void**>(&m_device_dag), m_epochContext.dagSize));
             m_allocated_memory_dag = m_epochContext.dagSize;
 
             // create mining buffers
@@ -137,19 +134,21 @@ bool CUDAMiner::initEpoch_internal()
             }
         }
 
-        CUDA_SAFE_CALL(cudaMemcpy(reinterpret_cast<void*>(light), m_epochContext.lightCache,
+        cudalog << "Generating DAG + Light...";
+
+        CUDA_SAFE_CALL(cudaMemcpy(reinterpret_cast<void*>(m_device_light), m_epochContext.lightCache,
             m_epochContext.lightSize, cudaMemcpyHostToDevice));
 
-        set_constants(dag, m_epochContext.dagNumItems, light,
+        set_constants(m_device_dag, m_epochContext.dagNumItems, m_device_light,
             m_epochContext.lightNumItems);  // in ethash_cuda_miner_kernel.cu
 
         ethash_generate_dag(
-            dag, m_epochContext.dagSize, light, m_epochContext.lightNumItems, m_settings.gridSize, m_settings.blockSize, m_streams[0], m_deviceDescriptor.cuDeviceIndex);
+            m_device_dag, m_epochContext.dagSize, m_device_light, m_epochContext.lightNumItems, m_settings.gridSize, m_settings.blockSize, m_streams[0], m_deviceDescriptor.cuDeviceIndex);
 
        cudalog << "ethash_generate_dag called with parameters:\n"
-        << "  dag: " << dag << "\n"
+        // << "  dag: " << m_device_dag << "\n"
         << "  DAG Size: " << m_epochContext.dagSize << "\n"
-        << "  light: " << light << "\n"
+        // << "  light: " << m_device_light << "\n"
         << "  Light Num Items: " << m_epochContext.lightNumItems << "\n"
         << "  Grid Size: " << m_settings.gridSize << "\n"
         << "  Block Size: " << m_settings.blockSize << "\n"
@@ -261,6 +260,8 @@ void CUDAMiner::workLoop()
             // Job's differences should be handled at higher level
             current = w;
             uint64_t upper64OfBoundary = (uint64_t)(u64)((u256)current.boundary >> 192);
+
+            cudalog << "workloop m_streams[0]: " << &m_streams[0];
 
             // Eventually start searching
             search(current.header.data(), upper64OfBoundary, current.startNonce, w);

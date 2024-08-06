@@ -195,8 +195,10 @@ void Farm::setWork(WorkPackage const& _newWp)
     Guard l(x_minerWork);
 
     // Retrieve appropriate EpochContext
-    if (m_currentWp.epoch != _newWp.epoch)
+    // if (m_currentWp.epoch != _newWp.epoch)
+    if (true)
     {
+        cwarn << "Impossible ";
         ethash::epoch_context _ec = ethash::get_global_epoch_context(_newWp.epoch);
         m_currentEc.epochNumber = _newWp.epoch;
         m_currentEc.lightNumItems = _ec.light_cache_num_items;
@@ -204,6 +206,15 @@ void Farm::setWork(WorkPackage const& _newWp)
         m_currentEc.dagNumItems = ethash::calculate_full_dataset_num_items(_newWp.epoch);
         m_currentEc.dagSize = ethash::get_full_dataset_size(m_currentEc.dagNumItems);
         m_currentEc.lightCache = _ec.light_cache;
+
+
+cwarn << "epochNumber: " << m_currentEc.epochNumber << "\n"
+      << "lightNumItems: " << m_currentEc.lightNumItems << "\n"
+      << "lightSize: " << m_currentEc.lightSize << "\n"
+      << "dagNumItems: " << m_currentEc.dagNumItems << "\n"
+      << "dagSize: " << m_currentEc.dagSize << "\n"
+      << "lightCache: " << m_currentEc.lightCache << "\n";
+
 
         for (auto const& miner : m_miners)
             miner->setEpoch(m_currentEc);
@@ -495,12 +506,19 @@ void Farm::submitProofAsync(Solution const& _s)
     if (!m_Settings.noEval && dbuild)
     {
         Result r = EthashAux::eval(_s.work.epoch, _s.work.block, _s.work.header, _s.nonce);
+        cwarn << "epoch: " << _s.work.epoch << "\n"
+          "block " << _s.work.block << "\n"
+          "header " << _s.work.header << "\n"
+          "nonce " << _s.nonce << "\n"
+          "r.powHash " << r.value << "\n"
+          "r.mixHash " << r.mixHash << "\n"
+          "_s.mixHash " << _s.mixHash << "\n";
         if (r.value > _s.work.boundary)
         {
             accountSolution(_s.midx, SolutionAccountingEnum::Failed);
             cwarn << "GPU " << _s.midx
                   << " gave incorrect result. Lower overclocking values if it happens frequently.";
-            return;
+            // return;
         }
         if (dbuild && (_s.mixHash != r.mixHash))
             cwarn << "GPU " << _s.midx << " mix missmatch";

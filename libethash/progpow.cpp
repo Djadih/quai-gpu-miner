@@ -11,6 +11,7 @@
 #include <ethash/keccak.hpp>
 
 #include <array>
+#include <iostream>
 
 namespace progpow
 {
@@ -296,22 +297,22 @@ result hash(const epoch_context& context, int block_number, const hash256& heade
 result hash(const epoch_context_full& context, int block_number, const hash256& header_hash,
     uint64_t nonce) noexcept
 {
-    static const auto lazy_lookup = [](const epoch_context& context, uint32_t index) noexcept
-    {
-        auto* full_dataset_1024 = static_cast<const epoch_context_full&>(context).full_dataset;
-        auto* full_dataset_2048 = reinterpret_cast<hash2048*>(full_dataset_1024);
-        hash2048& item = full_dataset_2048[index];
-        if (item.word64s[0] == 0)
-        {
-            // TODO: Copy elision here makes it thread-safe?
-            item = calculate_dataset_item_2048(context, index);
-        }
+    // static const auto lazy_lookup = [](const epoch_context& context, uint32_t index) noexcept
+    // {
+    //     auto* full_dataset_1024 = static_cast<const epoch_context_full&>(context).full_dataset;
+    //     auto* full_dataset_2048 = reinterpret_cast<hash2048*>(full_dataset_1024);
+    //     hash2048& item = full_dataset_2048[index];
+    //     if (item.word64s[0] == 0)
+    //     {
+    //         // TODO: Copy elision here makes it thread-safe?
+    //         item = calculate_dataset_item_2048(context, index);
+    //     }
 
-        return item;
-    };
+    //     return item;
+    // };
 
     const uint64_t seed = keccak_progpow_64(header_hash, nonce);
-    const hash256 mix_hash = hash_mix(context, block_number, seed, lazy_lookup);
+    const hash256 mix_hash = hash_mix(context, block_number, seed, calculate_dataset_item_2048);
     const hash256 final_hash = keccak_progpow_256(header_hash, seed, mix_hash);
     return {final_hash, mix_hash};
 }

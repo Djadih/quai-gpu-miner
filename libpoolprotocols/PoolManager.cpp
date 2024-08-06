@@ -153,16 +153,19 @@ void PoolManager::setClientHandlers()
             return;
 
         int _currentEpoch = m_currentWp.epoch;
-        bool newEpoch = (_currentEpoch == -1);
+        cnote << "currentEpoch of cached wp " << m_currentWp.epoch;
+        cnote << "epoch of new wp " << wp.epoch;
+        // bool newEpoch = (_currentEpoch == -1);
+        bool newEpoch = true;
 
-        // In EthereumStratum/2.0.0 epoch number is set in session
-        if (!newEpoch)
-        {
-            if (p_client->getConnection()->StratumMode() == 3)
-                newEpoch = (wp.epoch != m_currentWp.epoch);
-            else
-                newEpoch = (wp.seed != m_currentWp.seed);
-        }
+        // // In EthereumStratum/2.0.0 epoch number is set in session
+        // if (!newEpoch)
+        // {
+        //     if (p_client->getConnection()->StratumMode() == 3)
+        //         newEpoch = (wp.epoch != m_currentWp.epoch);
+        //     else
+        //         newEpoch = (wp.seed != m_currentWp.seed);
+        // }
 
         bool newDiff = (wp.boundary != m_currentWp.boundary);
 
@@ -170,30 +173,31 @@ void PoolManager::setClientHandlers()
 
         if (newEpoch)
         {
-            m_epochChanges.fetch_add(1, std::memory_order_relaxed);
+            // m_epochChanges.fetch_add(1, std::memory_order_relaxed);
 
             // If epoch is valued in workpackage take it
-            if (wp.epoch == -1)
-            {
-                if (m_currentWp.block >= 0)
+            // if (wp.epoch == -1)
+            // {
+                // if (m_currentWp.block >= 0)
                     m_currentWp.epoch = m_currentWp.block / ETHASH_EPOCH_LENGTH;
-                else
-                    m_currentWp.epoch = ethash::find_epoch_number(
-                        ethash::hash256_from_bytes(m_currentWp.seed.data()));
-            }
+                // else
+                //     m_currentWp.epoch = ethash::find_epoch_number(
+                //         ethash::hash256_from_bytes(m_currentWp.seed.data()));
+            // }
         }
         else
         {
             m_currentWp.epoch = _currentEpoch;
         }
 
-        if (newDiff || newEpoch)
+        // if (newDiff || newEpoch)
             showMiningAt();
 
         cnote << "Job: " EthWhite << m_currentWp.header.abridged()
               << (m_currentWp.block != -1 ? (" block " + to_string(m_currentWp.block)) : "")
               << EthReset << " " << m_selectedHost;
 
+        cnote << "m_currentWp " << m_currentWp.epoch;
         Farm::f().setWork(m_currentWp);
     });
 
