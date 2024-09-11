@@ -28,31 +28,31 @@ run_miner() {
 }
 
 if [[ "$1" == "00" ]]; then
-    run_miner 0 0 35.202.3.128 30000
+    run_miner 0 0 34.136.175.169 30000
 
 elif [[ "$1" == "01" ]]; then
-    run_miner 0 1 35.202.3.128 30001
+    run_miner 0 1 34.122.101.50 30001
 
 elif [[ "$1" == "02" ]]; then
-    run_miner 0 2 35.202.3.128 30002
+    run_miner 0 2 34.23.101.139 30002
 
 elif [[ "$1" == "10" ]]; then
-    run_miner 1 0 35.202.3.128 30003
+    run_miner 1 0 34.136.175.169 30003
 
 elif [[ "$1" == "11" ]]; then
-    run_miner 1 1 35.202.3.128 30004
+    run_miner 1 1 34.122.101.50 30004
 
 elif [[ "$1" == "12" ]]; then
-    run_miner 1 2 35.202.3.128 30005
+    run_miner 1 2 34.23.101.139 30005
 
 elif [[ "$1" == "20" ]]; then
-    run_miner 2 0 35.202.3.128 30006
+    run_miner 2 0 34.136.175.169 30006
 
 elif [[ "$1" == "21" ]]; then
-    run_miner 2 1 35.202.3.128 30007
+    run_miner 2 1 34.122.101.50 30007
 
 elif [[ "$1" == "22" ]]; then
-    run_miner 2 2 35.202.3.128 30008
+    run_miner 2 2 34.23.101.139 30008
 
 else
     echo "Invalid miner_num value"
