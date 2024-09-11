@@ -13,7 +13,7 @@ if [ $? != 0 ]; then
     tmux new-session -d -s $SESSION
 fi
 
-miner_path="/home/user/quai-gpu-miner/build/ethcoreminer/ethcoreminer"
+miner_path="/home/user/quai-gpu-miner/build/kawpowminer/kawpowminer"
 
 # Function to run the miner with log
 run_miner() {
