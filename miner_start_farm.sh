@@ -19,7 +19,7 @@ miner_path="/home/user/quai-gpu-miner/build/kawpowminer/kawpowminer"
 run_miner() {
     local region="$1"
     local zone="$2"
-    local cmd="$miner_path -G -P stratum://$3:$4"
+    local cmd="$miner_path -U -P stratum://$3:$4"
     local window_name="miner_${region}_${zone}"
     
     # Create a new window and run the command
