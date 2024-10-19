@@ -260,7 +260,7 @@ ethash_search(__global struct SearchResults* restrict g_output, __constant hash3
 #define LIGHT_WORDS 262139
 #endif
 
-#define ETHASH_DATASET_PARENTS 256
+#define ETHASH_DATASET_PARENTS 512
 #define NODE_WORDS (64 / 4)
 
 #define FNV_PRIME 0x01000193
